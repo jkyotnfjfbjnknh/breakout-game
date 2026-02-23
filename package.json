@@ -16,9 +16,7 @@
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {
-    "midi-player-js": "^0.1.28"
-  },
+  "dependencies": {},
   "devDependencies": {
     "serve": "^14.2.0"
   }
