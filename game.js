@@ -38,7 +38,6 @@ const colors = {
 const AudioSys = {
     ctx: null,
     bgmPlayer: null,
-    bgmSynth: null,
     init() {
         if (!this.ctx) {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -77,64 +76,13 @@ const AudioSys = {
         src.start();
     },
     startBackgroundMusic() {
-        if (this.bgmPlayer) return; // 已经在播放
-        if (!window.MidiPlayer) {
-            console.warn('MidiPlayer not loaded, skipping BGM');
-            return;
-        }
-        if (!this.ctx) this.init();
-        if (this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(err => console.warn('AudioContext resume failed', err));
-        }
-
-        try {
-            // 创建 Synth，使用当前 AudioContext
-            this.bgmSynth = new MidiPlayer.Synth(this.ctx);
-            // 调整音量到合适水平
-            this.bgmSynth.setVolume(0.3);
-            
-            // 创建 Player
-            this.bgmPlayer = new MidiPlayer.Player(event => {
-                // 将事件路由到合成器
-                this.bgmSynth(event);
-            });
-            
-            // 内嵌的 MIDI base64 数据 (C大调和弦循环，约15秒)
-            const midiBase64 = 
-                'TVRoZAAAAAYAAQABAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8A' +
-                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//' +
-                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A';
-            
-            // 将 base64 转换为 ArrayBuffer
-            const binaryString = atob(midiBase64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            const arrayBuffer = bytes.buffer;
-            
-            // 加载 MIDI 数据并播放（循环）
-            this.bgmPlayer.loadFile(arrayBuffer, true).then(() => {
-                this.bgmPlayer.start();
-                this.bgmPlayer.setLoop(true);
-            }).catch(err => {
-                console.error('Failed to load embedded MIDI:', err);
-                this.bgmPlayer = null;
-                this.bgmSynth = null;
-            });
-        } catch (e) {
-            console.error('MidiPlayer init error:', e);
-        }
+        // Background music disabled - MIDI implementation removed
+        console.log('Background music is currently disabled');
     },
     stopBackgroundMusic() {
         if (this.bgmPlayer) {
-            try { this.bgmPlayer.stop(); } catch(e){}
+            try { this.bgmPlayer.pause(); } catch(e){}
             this.bgmPlayer = null;
-        }
-        if (this.bgmSynth) {
-            try { this.bgmSynth.destroy(); } catch(e){}
-            this.bgmSynth = null;
         }
     }
 };
