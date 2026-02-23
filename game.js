@@ -265,8 +265,8 @@ function createPaddle() {
 
 // 创建球（在游戏开始时调用）
 function createBall() {
-    // 球生成位置紧贴底部砖块下方
-    const ballY = bottomBrickBottomY + config.ballRadius + 2;
+    // 球生成位置在底部砖块下方 20px 处
+    const ballY = bottomBrickBottomY + config.ballRadius + 20;
     ball = Bodies.circle(
         config.width / 2,
         ballY,
