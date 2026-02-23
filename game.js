@@ -423,6 +423,7 @@ function loseLife() {
 
 // 开始游戏
 function startGame() {
+    console.log('startGame invoked');
     document.getElementById('start-screen').classList.add('hidden');
     gameState.isPlaying = true; 
     gameState.score = 0;
@@ -432,10 +433,13 @@ function startGame() {
     // 只有在没有球的情况下才创建
     if (!ball) {
         createBall();
+    } else {
+        console.log('Ball already exists, skipping create');
     }
     
     // 发射球
     launchBall(); 
+    console.log('Ball launched');
 }
 
 // 发射球 (当游戏开始时)
