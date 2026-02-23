@@ -17,7 +17,7 @@ const config = {
 let gameState = {
     score: 0,
     lives: 3,
-    isPlaying: false,
+    isPlaying: false, // 初始状态为未开始
     bricks: []
 };
 
