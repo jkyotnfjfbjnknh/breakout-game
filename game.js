@@ -37,7 +37,8 @@ const colors = {
 // ================= 音频系统 =================
 const AudioSys = {
     ctx: null,
-    bgmOscs: [],
+    bgmPlayer: null,
+    bgmSynth: null,
     init() {
         if (!this.ctx) {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -75,80 +76,53 @@ const AudioSys = {
         gain.connect(this.ctx.destination);
         src.start();
     },
-    // 背景音乐：简单的和弦进行循环（15秒）
     startBackgroundMusic() {
+        if (this.bgmPlayer) return; // 已经在播放
+        if (!window.MidiPlayer) {
+            console.warn('MidiPlayer not loaded, skipping BGM');
+            return;
+        }
         if (!this.ctx) this.init();
-        if (this.bgmOscs.length > 0) return; // 已经在播放
-
-        // 确保 AudioContext 处于运行状态（浏览器自动播放策略）
         if (this.ctx.state === 'suspended') {
             this.ctx.resume().catch(err => console.warn('AudioContext resume failed', err));
         }
 
-        const now = this.ctx.currentTime;
-        const loopDuration = 15; // 秒
-        const tempo = 120; // BPM
-        const beatDuration = 60 / tempo;
-        const beatsPerChord = 4;
-        const chordDuration = beatDuration * beatsPerChord; // 2秒一个和弦
-
-        // C大调和弦进行: C - G - Am - F
-        const chords = [
-            [261.63, 329.63, 392.00], // C4, E4, G4
-            [392.00, 493.88, 587.33], // G4, B4, D5
-            [220.00, 261.63, 329.63], // A3, C4, E4
-            [349.23, 440.00, 523.25]  // F4, A4, C5
-        ];
-
-        let cycleCount = 0;
-        const maxCycles = 1000;
-
-        const playChord = (chordFreqs, chordStart, chordLen) => {
-            const oscs = chordFreqs.map(freq => {
-                const osc = this.ctx.createOscillator();
-                osc.type = 'triangle'; // 用三角波声音更柔和
-                osc.frequency.value = freq;
-                const gain = this.ctx.createGain();
-                // 淡入淡出避免爆音
-                const attack = 0.1;
-                const release = 0.2;
-                const volume = 0.12; // 调高一点音量
-                gain.gain.setValueAtTime(0, chordStart);
-                gain.gain.linearRampToValueAtTime(volume, chordStart + attack);
-                gain.gain.setValueAtTime(volume, chordStart + chordLen - release);
-                gain.gain.linearRampToValueAtTime(0, chordStart + chordLen);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(chordStart);
-                osc.stop(chordStart + chordLen);
-                return { osc, gain };
+        try {
+            // 创建 Synth，使用当前 AudioContext
+            this.bgmSynth = new MidiPlayer.Synth(this.ctx);
+            // 调整音量到合适水平
+            this.bgmSynth.setVolume(0.3);
+            
+            // 创建 Player
+            this.bgmPlayer = new MidiPlayer.Player(event => {
+                // 将事件路由到合成器
+                this.bgmSynth(event);
             });
-            return oscs;
-        };
-
-        const scheduleLoop = () => {
-            if (this.bgmOscs.length === 0) return; // 已停止
-            const loopStart = now + cycleCount * loopDuration;
-            chords.forEach((chord, idx) => {
-                const chordStart = loopStart + idx * chordDuration;
-                const oscs = playChord(chord, chordStart, chordDuration);
-                this.bgmOscs.push(...oscs);
+            
+            // 加载远程 MIDI 文件
+            const midiUrl = 'https://raw.githubusercontent.com/leangeleroque/midi-player-js/master/demo/A%20tasting%20of%20the%20ashes.mid';
+            this.bgmPlayer.loadFile(midiUrl, true).then(() => {
+                // 开始播放，循环
+                this.bgmPlayer.start();
+                this.bgmPlayer.setLoop(true);
+            }).catch(err => {
+                console.error('Failed to load MIDI:', err);
+                this.bgmPlayer = null;
+                this.bgmSynth = null;
             });
-            cycleCount++;
-            if (cycleCount < maxCycles) {
-                setTimeout(scheduleLoop, loopDuration * 1000);
-            }
-        };
-
-        scheduleLoop();
+        } catch (e) {
+            console.error('MidiPlayer init error:', e);
+        }
     },
     stopBackgroundMusic() {
-        // 停止所有背景音乐振荡器
-        this.bgmOscs.forEach(o => {
-            try { o.osc.stop(); } catch(e){}
-            try { o.gain.disconnect(); } catch(e){}
-        });
-        this.bgmOscs = [];
+        if (this.bgmPlayer) {
+            try { this.bgmPlayer.stop(); } catch(e){}
+            this.bgmPlayer = null;
+        }
+        if (this.bgmSynth) {
+            try { this.bgmSynth.destroy(); } catch(e){}
+            this.bgmSynth = null;
+        }
     }
 };
 
@@ -284,7 +258,7 @@ function createBall() {
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
-            restitution: 1.4,  // 固定弹性
+            restitution: 1.4,
             friction: 0,
             frictionAir: 0,
             label: 'ball'
@@ -314,7 +288,7 @@ function createBricks() {
                     label: 'brick',
                     brickRow: row,
                     brickCol: col,
-                    isStatic: true  // 砖块固定不动
+                    isStatic: true
                 }
             );
             World.add(engine.world, brick);
@@ -416,10 +390,10 @@ function setupCollisions() {
             }
             
             // 检测球是否掉落
-            if (bodyA.label === 'ball' && bodyA.position.y > config.height + 50) {
+            if (bodyA.position.y > config.height + 50 && bodyA.label === 'ball') {
                 loseLife();
             }
-            if (bodyB.label === 'ball' && bodyB.position.y > config.height + 50) {
+            if (bodyB.position.y > config.height + 50 && bodyB.label === 'ball') {
                 loseLife();
             }
         });
