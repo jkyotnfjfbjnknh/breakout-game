@@ -149,7 +149,8 @@ function createBricks() {
                     render: { fillStyle: colors.bricks[row % colors.bricks.length] },
                     label: 'brick',
                     brickRow: row,
-                    brickCol: col
+                    brickCol: col,
+                    isStatic: true  // 砖块固定不动
                 }
             );
             World.add(engine.world, brick);
