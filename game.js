@@ -381,6 +381,16 @@ function restartGame() {
         ball = null;
     }
     
+    // 清除所有旧砖块
+    if (gameState.bricks.length > 0) {
+        gameState.bricks.forEach(brick => World.remove(engine.world, brick));
+        gameState.bricks = [];
+        brickRows = [];
+    }
+    
+    // 重新生成砖块
+    createBricks();
+    
     // 重新开始
     startGame();
 }
