@@ -265,8 +265,8 @@ function createPaddle() {
 
 // 创建球（在游戏开始时调用）
 function createBall() {
-    // 球生成在挡板上方 10px 处，初始速度为零，受重力下落
-    const startY = paddle.position.y - config.ballRadius - 10;
+    // 球生成在底部砖块下方 10px 处，初始速度为零，受重力下落
+    const startY = bottomBrickBottomY + config.ballRadius + 10;
     ball = Bodies.circle(
         config.width / 2,
         startY,
@@ -312,6 +312,10 @@ function createBricks() {
             gameState.bricks.push(brick);
         }
     }
+    // 计算最底部砖块的底部Y坐标
+    const lastRow = config.brickRows - 1;
+    const brickCenterY = config.brickGap + lastRow * (brickHeight + config.brickGap) + brickHeight / 2 + 50;
+    bottomBrickBottomY = brickCenterY + brickHeight / 2;
 }
 
 // 设置输入控制
