@@ -25,6 +25,7 @@ let gameState = {
 let engine, render, runner;
 let paddle, ball;
 let brickRows = [];
+let bottomBrickBottomY = 0;
 
 // 颜色配置
 const colors = {
@@ -264,9 +265,11 @@ function createPaddle() {
 
 // 创建球（在游戏开始时调用）
 function createBall() {
+    // 球生成位置紧贴底部砖块下方
+    const ballY = bottomBrickBottomY + config.ballRadius + 2;
     ball = Bodies.circle(
         config.width / 2,
-        config.height - 100,
+        ballY,
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
@@ -308,6 +311,10 @@ function createBricks() {
             gameState.bricks.push(brick);
         }
     }
+    // 计算最底部砖块的底部Y坐标
+    const lastRow = config.brickRows - 1;
+    const brickCenterY = config.brickGap + lastRow * (brickHeight + config.brickGap) + brickHeight / 2 + 50;
+    bottomBrickBottomY = brickCenterY + brickHeight / 2;
 }
 
 // 设置输入控制
