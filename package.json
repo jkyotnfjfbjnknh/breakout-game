@@ -1,0 +1,22 @@
+{
+  "name": "breakout-game",
+  "version": "1.0.0",
+  "description": "基于 Matter.js 物理引擎的经典打砖块游戏，支持触屏操作",
+  "main": "game.js",
+  "scripts": {
+    "start": "npx serve .",
+    "deploy": "vercel --prod"
+  },
+  "keywords": [
+    "breakout",
+    "game",
+    "matter-js",
+    "physics",
+    "mobile"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.0"
+  }
+}
