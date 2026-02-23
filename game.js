@@ -136,8 +136,13 @@ function updateAndDrawParticles(ctx, width, height) {
 
 // 初始化游戏
 function init() {
-    // 创建引擎
-    engine = Engine.create();
+    // 创建引擎（增加迭代次数以提高碰撞精度，防止穿透）
+    engine = Engine.create({
+        positionIterations: 20,
+        velocityIterations: 20
+    });
+    // 启用重力（让球自然下落）
+    engine.gravity.y = 1;
     
     // 创建渲染器
     render = Render.create({
@@ -406,6 +411,26 @@ function clampBallSpeed(maxSpeed) {
         const scale = maxSpeed / speed;
         Body.setVelocity(ball, { x: v.x * scale, y: v.y * scale });
     }
+}
+
+// 增加挡板厚度并启用连续碰撞检测（防止高速穿透）
+function createPaddle() {
+    paddle = Bodies.rectangle(
+        config.width / 2,
+        config.height - 50,
+        config.paddleWidth,
+        config.paddleHeight,
+        {
+            isStatic: true,
+            render: { fillStyle: colors.paddle },
+            chamfer: { radius: 5 },
+            label: 'paddle',
+            friction: 0,
+            frictionStatic: 0,
+            restitution: 1.0
+        }
+    );
+    World.add(engine.world, paddle);
 }
 
 // 移除砖块
