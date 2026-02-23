@@ -120,7 +120,7 @@ function createBall() {
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
-            restitution: 1,
+            restitution: 1.2,  // 增加弹性
             friction: 0,
             frictionAir: 0,
             label: 'ball',
@@ -252,6 +252,8 @@ function setupCollisions() {
     // 每帧检查球是否掉落
     Events.on(engine, 'beforeUpdate', () => {
         if (ball.position.y > config.height + 50 && gameState.isPlaying) {
+            // 重置球速度，防止继续下落
+            Body.setVelocity(ball, { x: 0, y: 0 });
             loseLife();
         }
         
@@ -276,6 +278,8 @@ function removeBrick(brick) {
 
 // 失去生命
 function loseLife() {
+    if (!gameState.isPlaying) return;  // 游戏未开始不扣除生命
+    
     gameState.lives--;
     updateUI();
     
@@ -302,8 +306,10 @@ function resetBall() {
 
 // 发射球
 function launchBall() {
+    if (!gameState.isPlaying) return;  // 确保游戏在进行中
+    
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
-    const speed = 8;
+    const speed = 10;  // 增加初始速度
     Body.setVelocity(ball, {
         x: Math.cos(angle) * speed,
         y: Math.sin(angle) * speed
