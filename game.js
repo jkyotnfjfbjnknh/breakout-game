@@ -34,6 +34,97 @@ const colors = {
     background: '#1a1a2e'
 };
 
+// ================= 音频系统 =================
+const AudioSys = {
+    ctx: null,
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    },
+    playPaddle() {
+        if (!this.ctx) this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialDecayTo = 0.001;
+        gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.01);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.05);
+    },
+    playBrickExplosion() {
+        if (!this.ctx) this.init();
+        // 模拟爆炸噪声
+        const bufferSize = this.ctx.sampleRate * 0.1;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        src.connect(gain);
+        gain.connect(this.ctx.destination);
+        src.start();
+    }
+};
+
+// ================= 粒子系统 =================
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.vx = (Math.random() - 0.5) * 8;
+        this.vy = (Math.random() - 0.5) * 8;
+        this.size = Math.random() * 6 + 2;
+        this.color = color;
+        this.alpha = 1;
+        this.decay = Math.random() * 0.02 + 0.01;
+    }
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.2; // 重力
+        this.alpha -= this.decay;
+    }
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+        ctx.restore();
+    }
+}
+
+let particles = [];
+
+function spawnParticles(x, y, color, count = 12) {
+    for (let i = 0; i < count; i++) {
+        particles.push(new Particle(x, y, color));
+    }
+}
+
+function updateAndDrawParticles(ctx, width, height) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.update();
+        if (p.alpha <= 0 || p.y > height) {
+            particles.splice(i, 1);
+        } else {
+            p.draw(ctx);
+        }
+    }
+}
+
+// 修改 Render.options 以在渲染循环中添加粒子绘制
+
 // 初始化游戏
 function init() {
     // 创建引擎
@@ -235,9 +326,19 @@ function setupCollisions() {
             if ((bodyA.label === 'ball' && bodyB.label === 'brick') ||
                 (bodyB.label === 'ball' && bodyA.label === 'brick')) {
                 const brick = bodyA.label === 'brick' ? bodyA : bodyB;
+                // 播放爆炸音效
+                AudioSys.playBrickExplosion();
+                // 生成破碎粒子特效
+                spawnParticles(brick.position.x, brick.position.y, brick.render.fillStyle);
                 removeBrick(brick);
                 // 限制碰撞后的最大速度，防止弹跳力不断增大
-                clampBallSpeed(17);
+                clampBallSpeed(userParams.maxSpeed);
+            }
+            
+            // 检测球与挡板的碰撞（播放音效，避免重复）
+            if ((bodyA.label === 'ball' && bodyB.label === 'paddle') ||
+                (bodyB.label === 'ball' && bodyA.label === 'paddle')) {
+                AudioSys.playPaddle();
             }
             
             // 检测球是否掉落
@@ -259,11 +360,18 @@ function setupCollisions() {
         }
         
         // 持续限制球的最大速度（防止其他碰撞导致的速度累积）
-        clampBallSpeed(17);
+        clampBallSpeed(userParams.maxSpeed);
         
         // 检查是否胜利
         if (gameState.isPlaying && gameState.bricks.length === 0) {
             winGame();
+        }
+    });
+    
+    // 渲染粒子特效
+    Events.on(render, 'afterRender', () => {
+        if (render && render.context) {
+            updateAndDrawParticles(render.context, config.width, config.height);
         }
     });
 }
