@@ -237,7 +237,7 @@ function setupCollisions() {
                 const brick = bodyA.label === 'brick' ? bodyA : bodyB;
                 removeBrick(brick);
                 // 限制碰撞后的最大速度，防止弹跳力不断增大
-                clampBallSpeed(12);
+                clampBallSpeed(16);
             }
             
             // 检测球是否掉落
@@ -259,7 +259,7 @@ function setupCollisions() {
         }
         
         // 持续限制球的最大速度（防止其他碰撞导致的速度累积）
-        clampBallSpeed(12);
+        clampBallSpeed(16);
         
         // 检查是否胜利
         if (gameState.isPlaying && gameState.bricks.length === 0) {
@@ -334,8 +334,8 @@ function startGame() {
 function launchBall() {
     if (!gameState.isPlaying) return;  // 确保游戏在进行中才发射
     
-    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
-    const speed = 10;
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.4; // 增加角度范围
+    const speed = 14; // 增加初始速度
     Body.setVelocity(ball, {
         x: Math.cos(angle) * speed,
         y: Math.sin(angle) * speed
