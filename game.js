@@ -236,6 +236,8 @@ function setupCollisions() {
                 (bodyB.label === 'ball' && bodyA.label === 'brick')) {
                 const brick = bodyA.label === 'brick' ? bodyA : bodyB;
                 removeBrick(brick);
+                // 限制碰撞后的最大速度，防止弹跳力不断增大
+                clampBallSpeed(12);
             }
             
             // 检测球是否掉落
@@ -248,7 +250,7 @@ function setupCollisions() {
         });
     });
     
-    // 每帧检查球是否掉落
+    // 每帧检查球是否掉落和速度限制
     Events.on(engine, 'beforeUpdate', () => {
         if (ball && ball.position.y > config.height + 50 && gameState.isPlaying) {
             // 重置球速度，防止继续下落
@@ -256,11 +258,25 @@ function setupCollisions() {
             loseLife();
         }
         
+        // 持续限制球的最大速度（防止其他碰撞导致的速度累积）
+        clampBallSpeed(12);
+        
         // 检查是否胜利
         if (gameState.isPlaying && gameState.bricks.length === 0) {
             winGame();
         }
     });
+}
+
+// 限制球的最大速度
+function clampBallSpeed(maxSpeed) {
+    if (!ball) return;
+    const v = ball.velocity;
+    const speed = Math.hypot(v.x, v.y);
+    if (speed > maxSpeed) {
+        const scale = maxSpeed / speed;
+        Body.setVelocity(ball, { x: v.x * scale, y: v.y * scale });
+    }
 }
 
 // 移除砖块
@@ -290,7 +306,7 @@ function loseLife() {
             World.remove(engine.world, ball);
             ball = null;
         }
-        // 重新创建球
+        // 重新创建球（会在 startGame 再次调用 launchBall）
         createBall();
     }
 }
