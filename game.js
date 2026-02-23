@@ -119,7 +119,7 @@ function createBall() {
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
-            restitution: 1.2,  // 固定弹性
+            restitution: 1.4,  // 增加弹性，更弹
             friction: 0,
             frictionAir: 0,
             label: 'ball'
@@ -308,6 +308,8 @@ function loseLife() {
         }
         // 重新创建球（会在 startGame 再次调用 launchBall）
         createBall();
+        // 重置挡板位置到屏幕中央
+        Body.setPosition(paddle, { x: config.width / 2, y: config.height - 50 });
     }
 }
 
