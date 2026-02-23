@@ -391,6 +391,9 @@ function restartGame() {
     // 重新生成砖块
     createBricks();
     
+    // 重置挡板位置到屏幕中央
+    Body.setPosition(paddle, { x: config.width / 2, y: config.height - 50 });
+    
     // 重新开始
     startGame();
 }
