@@ -237,12 +237,12 @@ function createWalls() {
         restitution: 1
     };
     
-    // 左墙
-    World.add(engine.world, Bodies.rectangle(-5, config.height/2, 10, config.height, wallOptions));
-    // 右墙
-    World.add(engine.world, Bodies.rectangle(config.width+5, config.height/2, 10, config.height, wallOptions));
-    // 顶墙
-    World.add(engine.world, Bodies.rectangle(config.width/2, -5, config.width, 10, wallOptions));
+    // 左墙（加厚到 40，防止高速穿透）
+    World.add(engine.world, Bodies.rectangle(-20, config.height/2, 40, config.height, wallOptions));
+    // 右墙（加厚到 40）
+    World.add(engine.world, Bodies.rectangle(config.width+20, config.height/2, 40, config.height, wallOptions));
+    // 顶墙（加厚到 40）
+    World.add(engine.world, Bodies.rectangle(config.width/2, -20, config.width, 40, wallOptions));
 }
 
 // 创建挡板
