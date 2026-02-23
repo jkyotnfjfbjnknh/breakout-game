@@ -20,7 +20,7 @@
 
 ## 🚀 在线游玩
 
-访问 [Vercel 部署链接](https://breakout-game.vercel.app) 即可开始游戏！
+访问 [Vercel 部署链接](https://breakout-game-two.vercel.app) 即可开始游戏！
 
 ## 🛠️ 本地运行
 
