@@ -281,6 +281,7 @@ function createBall() {
     );
     World.add(engine.world, ball);
     Body.setVelocity(ball, { x: 0, y: 0 });
+    ball.launched = false; // 标记球尚未发射（第一次碰到挡板时发射）
 }
 
 // 创建砖块
