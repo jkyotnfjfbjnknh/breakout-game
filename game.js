@@ -25,7 +25,6 @@ let gameState = {
 let engine, render, runner;
 let paddle, ball;
 let brickRows = [];
-let bottomBrickBottomY = 0;
 
 // 颜色配置
 const colors = {
@@ -103,7 +102,8 @@ const AudioSys = {
             // 内嵌的 MIDI base64 数据 (C大调和弦循环，约15秒)
             const midiBase64 = 
                 'TVRoZAAAAAYAAQABAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8A' +
-                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A';
+                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//' +
+                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A';
             
             // 将 base64 转换为 ArrayBuffer
             const binaryString = atob(midiBase64);
@@ -265,11 +265,11 @@ function createPaddle() {
 
 // 创建球（在游戏开始时调用）
 function createBall() {
-    // 球生成位置在底部砖块下方 100px 处，确保不会碰到砖块
-    const ballY = bottomBrickBottomY + config.ballRadius + 100;
+    // 球生成在挡板上方 10px 处，初始速度为零，受重力下落
+    const startY = paddle.position.y - config.ballRadius - 10;
     ball = Bodies.circle(
         config.width / 2,
-        ballY,
+        startY,
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
@@ -311,10 +311,6 @@ function createBricks() {
             gameState.bricks.push(brick);
         }
     }
-    // 计算最底部砖块的底部Y坐标
-    const lastRow = config.brickRows - 1;
-    const brickCenterY = config.brickGap + lastRow * (brickHeight + config.brickGap) + brickHeight / 2 + 50;
-    bottomBrickBottomY = brickCenterY + brickHeight / 2;
 }
 
 // 设置输入控制
@@ -402,10 +398,15 @@ function setupCollisions() {
                 clampBallSpeed(17);
             }
             
-            // 检测球与挡板的碰撞（播放音效，避免重复）
+            // 检测球与挡板的碰撞（播放音效，并在第一次碰撞时发射球）
             if ((bodyA.label === 'ball' && bodyB.label === 'paddle') ||
                 (bodyB.label === 'ball' && bodyA.label === 'paddle')) {
                 AudioSys.playPaddle();
+                // 如果是首次碰撞（球还未发射），给球一个向上的速度
+                if (gameState.isPlaying && !ball.launched) {
+                    launchBall();
+                    ball.launched = true;
+                }
             }
             
             // 检测球是否掉落
@@ -481,10 +482,8 @@ function loseLife() {
             World.remove(engine.world, ball);
             ball = null;
         }
-        // 重新创建球（会在 startGame 再次调用 launchBall）
+        // 重新创建球（不自动发射，等碰到挡板再发射）
         createBall();
-        // 重置挡板位置到屏幕中央
-        Body.setPosition(paddle, { x: config.width / 2, y: config.height - 50 });
     }
 }
 
@@ -509,17 +508,15 @@ function startGame() {
         console.log('Ball already exists, skipping create');
     }
     
-    // 发射球
-    launchBall(); 
-    // 播放背景音乐
+    // 不立即发射球，让它受重力下落，碰到挡板后再发射
+    // 启动背景音乐
     AudioSys.startBackgroundMusic();
-    console.log('Ball launched');
+    console.log('Game started, ball will fall and launch on first paddle hit');
 }
 
-// 发射球 (当游戏开始时)
+// 发射球（当球第一次碰到挡板时调用）
 function launchBall() {
-    if (!gameState.isPlaying) return;  // 确保游戏在进行中才发射
-    
+    // 给球一个向上的速度
     const angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.4; // 增加角度范围
     const speed = 14; // 增加初始速度
     Body.setVelocity(ball, {
