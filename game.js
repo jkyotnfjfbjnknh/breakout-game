@@ -332,7 +332,7 @@ function setupCollisions() {
                 spawnParticles(brick.position.x, brick.position.y, brick.render.fillStyle);
                 removeBrick(brick);
                 // 限制碰撞后的最大速度，防止弹跳力不断增大
-                clampBallSpeed(userParams.maxSpeed);
+                clampBallSpeed(17);
             }
             
             // 检测球与挡板的碰撞（播放音效，避免重复）
@@ -360,7 +360,7 @@ function setupCollisions() {
         }
         
         // 持续限制球的最大速度（防止其他碰撞导致的速度累积）
-        clampBallSpeed(userParams.maxSpeed);
+        clampBallSpeed(17);
         
         // 检查是否胜利
         if (gameState.isPlaying && gameState.bricks.length === 0) {
