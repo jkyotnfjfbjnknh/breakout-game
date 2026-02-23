@@ -80,6 +80,11 @@ const AudioSys = {
         if (!this.ctx) this.init();
         if (this.bgmOscs.length > 0) return; // 已经在播放
 
+        // 确保 AudioContext 处于运行状态（浏览器自动播放策略）
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(err => console.warn('AudioContext resume failed', err));
+        }
+
         const now = this.ctx.currentTime;
         const loopDuration = 15; // 秒
         const tempo = 120; // BPM
@@ -95,22 +100,22 @@ const AudioSys = {
             [349.23, 440.00, 523.25]  // F4, A4, C5
         ];
 
-        let startTime = now;
         let cycleCount = 0;
-        const maxCycles = 1000; // 防止无限循环，实际上会循环播放
+        const maxCycles = 1000;
 
         const playChord = (chordFreqs, chordStart, chordLen) => {
             const oscs = chordFreqs.map(freq => {
                 const osc = this.ctx.createOscillator();
-                osc.type = 'sine';
+                osc.type = 'triangle'; // 用三角波声音更柔和
                 osc.frequency.value = freq;
                 const gain = this.ctx.createGain();
                 // 淡入淡出避免爆音
                 const attack = 0.1;
                 const release = 0.2;
+                const volume = 0.12; // 调高一点音量
                 gain.gain.setValueAtTime(0, chordStart);
-                gain.gain.linearRampToValueAtTime(0.08, chordStart + attack);
-                gain.gain.setValueAtTime(0.08, chordStart + chordLen - release);
+                gain.gain.linearRampToValueAtTime(volume, chordStart + attack);
+                gain.gain.setValueAtTime(volume, chordStart + chordLen - release);
                 gain.gain.linearRampToValueAtTime(0, chordStart + chordLen);
                 osc.connect(gain);
                 gain.connect(this.ctx.destination);
@@ -193,8 +198,6 @@ function updateAndDrawParticles(ctx, width, height) {
         }
     }
 }
-
-// 修改 Render.options 以在渲染循环中添加粒子绘制
 
 // 初始化游戏
 function init() {
@@ -281,7 +284,7 @@ function createBall() {
         config.ballRadius,
         {
             render: { fillStyle: colors.ball },
-            restitution: 1.4,  // 增加弹性，更弹
+            restitution: 1.4,  // 固定弹性
             friction: 0,
             frictionAir: 0,
             label: 'ball'
@@ -495,7 +498,12 @@ function loseLife() {
 // 开始游戏
 function startGame() {
     console.log('startGame invoked');
-    document.getElementById('start-screen').classList.add('hidden');
+    try {
+        document.getElementById('start-screen').classList.add('hidden');
+    } catch (e) {
+        console.error('Failed to hide start-screen', e);
+    }
+    
     gameState.isPlaying = true; 
     gameState.score = 0;
     gameState.lives = 5;
