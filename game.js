@@ -37,6 +37,7 @@ const colors = {
 // ================= 音频系统 =================
 const AudioSys = {
     ctx: null,
+    bgmOscs: [],
     init() {
         if (!this.ctx) {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -73,6 +74,76 @@ const AudioSys = {
         src.connect(gain);
         gain.connect(this.ctx.destination);
         src.start();
+    },
+    // 背景音乐：简单的和弦进行循环（15秒）
+    startBackgroundMusic() {
+        if (!this.ctx) this.init();
+        if (this.bgmOscs.length > 0) return; // 已经在播放
+
+        const now = this.ctx.currentTime;
+        const loopDuration = 15; // 秒
+        const tempo = 120; // BPM
+        const beatDuration = 60 / tempo;
+        const beatsPerChord = 4;
+        const chordDuration = beatDuration * beatsPerChord; // 2秒一个和弦
+
+        // C大调和弦进行: C - G - Am - F
+        const chords = [
+            [261.63, 329.63, 392.00], // C4, E4, G4
+            [392.00, 493.88, 587.33], // G4, B4, D5
+            [220.00, 261.63, 329.63], // A3, C4, E4
+            [349.23, 440.00, 523.25]  // F4, A4, C5
+        ];
+
+        let startTime = now;
+        let cycleCount = 0;
+        const maxCycles = 1000; // 防止无限循环，实际上会循环播放
+
+        const playChord = (chordFreqs, chordStart, chordLen) => {
+            const oscs = chordFreqs.map(freq => {
+                const osc = this.ctx.createOscillator();
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                const gain = this.ctx.createGain();
+                // 淡入淡出避免爆音
+                const attack = 0.1;
+                const release = 0.2;
+                gain.gain.setValueAtTime(0, chordStart);
+                gain.gain.linearRampToValueAtTime(0.08, chordStart + attack);
+                gain.gain.setValueAtTime(0.08, chordStart + chordLen - release);
+                gain.gain.linearRampToValueAtTime(0, chordStart + chordLen);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(chordStart);
+                osc.stop(chordStart + chordLen);
+                return { osc, gain };
+            });
+            return oscs;
+        };
+
+        const scheduleLoop = () => {
+            if (this.bgmOscs.length === 0) return; // 已停止
+            const loopStart = now + cycleCount * loopDuration;
+            chords.forEach((chord, idx) => {
+                const chordStart = loopStart + idx * chordDuration;
+                const oscs = playChord(chord, chordStart, chordDuration);
+                this.bgmOscs.push(...oscs);
+            });
+            cycleCount++;
+            if (cycleCount < maxCycles) {
+                setTimeout(scheduleLoop, loopDuration * 1000);
+            }
+        };
+
+        scheduleLoop();
+    },
+    stopBackgroundMusic() {
+        // 停止所有背景音乐振荡器
+        this.bgmOscs.forEach(o => {
+            try { o.osc.stop(); } catch(e){}
+            try { o.gain.disconnect(); } catch(e){}
+        });
+        this.bgmOscs = [];
     }
 };
 
@@ -439,6 +510,8 @@ function startGame() {
     
     // 发射球
     launchBall(); 
+    // 播放背景音乐
+    AudioSys.startBackgroundMusic();
     console.log('Ball launched');
 }
 
@@ -463,6 +536,7 @@ function updateUI() {
 // 游戏结束
 function gameOver() {
     gameState.isPlaying = false;
+    AudioSys.stopBackgroundMusic();
     document.getElementById('game-over-title').textContent = '游戏结束';
     document.getElementById('final-score').textContent = `最终得分：${gameState.score}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
@@ -471,6 +545,7 @@ function gameOver() {
 // 胜利
 function winGame() {
     gameState.isPlaying = false;
+    AudioSys.stopBackgroundMusic();
     document.getElementById('game-over-title').textContent = '🎉 恭喜通关！';
     document.getElementById('final-score').textContent = `最终得分：${gameState.score}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
