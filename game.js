@@ -16,7 +16,7 @@ const config = {
 // 游戏状态
 let gameState = {
     score: 0,
-    lives: 3,
+    lives: 5,
     isPlaying: false,
     bricks: []
 };
@@ -427,7 +427,7 @@ function startGame() {
     document.getElementById('start-screen').classList.add('hidden');
     gameState.isPlaying = true; 
     gameState.score = 0;
-    gameState.lives = 3;
+    gameState.lives = 5;
     updateUI();
 
     // 只有在没有球的情况下才创建
@@ -484,7 +484,7 @@ function restartGame() {
     // 重置游戏状态
     gameState.isPlaying = false;
     gameState.score = 0;
-    gameState.lives = 3;
+    gameState.lives = 5;
     updateUI();
     
     // 移除旧的球（如果存在）
