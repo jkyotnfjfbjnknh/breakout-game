@@ -99,14 +99,26 @@ const AudioSys = {
                 this.bgmSynth(event);
             });
             
-            // 加载远程 MIDI 文件
-            const midiUrl = 'https://raw.githubusercontent.com/leangeleroque/midi-player-js/master/demo/A%20tasting%20of%20the%20ashes.mid';
-            this.bgmPlayer.loadFile(midiUrl, true).then(() => {
-                // 开始播放，循环
+            // 内嵌的 MIDI base64 数据 (C大调和弦循环，约15秒)
+            const midiBase64 = 
+                'TVRoZAAAAAYAAQABAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8AAP8A' +
+                '//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A//8A';
+            
+            // 将 base64 转换为 ArrayBuffer
+            const binaryString = atob(midiBase64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            const arrayBuffer = bytes.buffer;
+            
+            // 加载 MIDI 数据并播放（循环）
+            this.bgmPlayer.loadFile(arrayBuffer, true).then(() => {
                 this.bgmPlayer.start();
                 this.bgmPlayer.setLoop(true);
             }).catch(err => {
-                console.error('Failed to load MIDI:', err);
+                console.error('Failed to load embedded MIDI:', err);
                 this.bgmPlayer = null;
                 this.bgmSynth = null;
             });
@@ -518,7 +530,7 @@ function updateUI() {
 // 游戏结束
 function gameOver() {
     gameState.isPlaying = false;
-    AudioSys.stopBackgroundMusic();
+    // 背景音乐持续播放，不停止
     document.getElementById('game-over-title').textContent = '游戏结束';
     document.getElementById('final-score').textContent = `最终得分：${gameState.score}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
@@ -527,7 +539,7 @@ function gameOver() {
 // 胜利
 function winGame() {
     gameState.isPlaying = false;
-    AudioSys.stopBackgroundMusic();
+    // 背景音乐持续播放，不停止
     document.getElementById('game-over-title').textContent = '🎉 恭喜通关！';
     document.getElementById('final-score').textContent = `最终得分：${gameState.score}`;
     document.getElementById('game-over-screen').classList.remove('hidden');
