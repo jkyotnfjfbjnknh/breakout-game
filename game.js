@@ -75,10 +75,70 @@ const AudioSys = {
         gain.connect(this.ctx.destination);
         src.start();
     },
-    startBackgroundMusic() {
-        // Background music disabled - MIDI implementation removed
-        console.log('Background music is currently disabled');
+    // 15秒循环背景音乐实现
+    bgmContext: null,
+    bgmSource: null,
+    bgmTimer: null,
+    initBackgroundContext() {
+        if (!this.bgmContext) {
+            this.bgmContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
     },
+    startBackgroundMusic() {
+        if (this.bgmContext && this.bgmSource) return;
+        this.initBackgroundContext();
+        const ctx = this.bgmContext;
+        const master = ctx.createGain();
+        master.gain.value = 0.15;
+        master.connect(ctx.destination);
+
+        const now = ctx.currentTime;
+        const tones = [
+            { base: 440, type: "sine" },
+            { base: 523.25, type: "sine" },
+            { base: 659.25, type: "sine" }
+        ];
+        const oscillators = [];
+        const gains = [];
+        tones.forEach((t) => {
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.type = t.type;
+            osc.frequency.setValueAtTime(t.base, now);
+            g.gain.setValueAtTime(0.0, now);
+            g.gain.linearRampToValueAtTime(0.15, now + 0.5);
+            osc.connect(g);
+            g.connect(master);
+            osc.start(now);
+            oscillators.push(osc);
+            gains.push(g);
+        });
+        this.bgmSource = { oscillators, gains, master, startAt: now };
+
+        const loopMs = 15000;
+        this.bgmTimer = setInterval(() => {
+            try { this.stopBackgroundMusic(true); } catch(e) {}
+            this.startBackgroundMusic();
+        }, loopMs);
+
+        if (ctx.state === "suspended") ctx.resume();
+    },
+    stopBackgroundMusic(force){
+        if (this.bgmTimer) {
+            clearInterval(this.bgmTimer);
+            this.bgmTimer = null;
+        }
+        if (this.bgmContext && this.bgmSource) {
+            try { this.bgmSource.oscillators.forEach(o => o.stop()); } catch(e){}
+            try { this.bgmSource.master.disconnect(); } catch(e){}
+            this.bgmSource = null;
+        }
+        if (force && this.bgmContext) {
+            try { this.bgmContext.close(); } catch(e){}
+            this.bgmContext = null;
+        }
+    },
+
     stopBackgroundMusic() {
         if (this.bgmPlayer) {
             try { this.bgmPlayer.pause(); } catch(e){}
