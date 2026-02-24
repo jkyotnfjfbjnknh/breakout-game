@@ -94,9 +94,9 @@ const AudioSys = {
 
         const now = ctx.currentTime;
         const tones = [
-            { base: 440, type: "sine" },
-            { base: 523.25, type: "sine" },
-            { base: 659.25, type: "sine" }
+            { base: 261.63, type: "square" }, // C4
+            { base: 329.63, type: "square" }, // E4
+            { base: 392.00, type: "square" }  // G4
         ];
         const oscillators = [];
         const gains = [];
